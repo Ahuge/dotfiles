@@ -14,8 +14,8 @@ set showmatch           " highlight matching [{()}]
 set incsearch           " search as characters are entered
 set hlsearch            " highlight matches
 
-set foldenable          " enable folding
-set foldlevelstart=10   " open most folds by default
+" set foldenable          " enable folding
+" set foldlevelstart=10   " open most folds by default
 
 
 
@@ -46,3 +46,11 @@ augroup configgroup
     autocmd BufEnter *.sh setlocal softtabstop=2
 augroup END
 
+
+" Enable 256 colors palette in Gnome Terminal
+if $COLORTERM == 'gnome-terminal'
+    set t_Co=256
+endif
+
+" Font
+" set gfn=:Hack\ 8
