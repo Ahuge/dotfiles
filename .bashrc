@@ -19,7 +19,7 @@ alias wthr="curl -s 'wttr.in/Vancouver?format=3&m'"
 alias gd="cd $HOME/_dev"
 alias pd="echo $HOME/_dev"
 alias cl="clear"
-alias config='/usr/bin/git --git-dir=$HOME/.cg --work-tree=$HOME'
+alias config='/usr/bin/git --git-dir=$HOME/.cfg --work-tree=$HOME'
 
 PROMPT_COMMAND='echo -en "\033]0; $("wthr_cmd")  $USER: $("pwd") \a"'
 
