@@ -6,12 +6,12 @@ if [ -f /etc/bashrc ]; then
 fi
 
 # Custom bash functions
-source $HOME/.bash_functions
+source $HOME/.bashfunctions
 # Custom Environment Vars
-source $HOME/.bash_env
+source $HOME/.bashenv
 
 # Custom Aliases
-source $HOME/.bash_aliases
+source $HOME/.bashaliases
 
 # Startup
 PROMPT_COMMAND='echo -en "\033]0; $("wthr_cmd")  $USER: $("pwd") \a"'
