@@ -12,19 +12,12 @@ function prefs() {
     then
         $EDITOR $HOME/.bashrc
     else
-        case $1 in
-        functions)
-            $EDITOR $HOME/.bash_$1
-            ;;
-        aliases)
-            $EDITOR $HOME/.bash_$1
-            ;;
-        env)
-            $EDITOR $HOME/.bash_$1
-            ;;
-        *)
-            echo "Unknown file .bash_$1"
-            ;;
-        esac
+        bash_files=$(echo $BASHFILES | tr ":" "\n")
+        if [[ $bash_files =~ $1 ]]
+        then
+            $EDITOR $HOME/.bash$1
+        else
+            echo "ERROR: $1 is not a valid option!";
+        fi
     fi
 }
