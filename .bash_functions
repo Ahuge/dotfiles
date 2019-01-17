@@ -8,10 +8,9 @@ function wrapcfg() {
 }
 
 function prefs() {
-    echo $1;
-    if [ $1 == "" ]
+    if [ -z $1 ]
     then
-        $EDITOR $HOME/.bashrc;
+        $EDITOR $HOME/.bashrc
     else
         case $1 in
         functions)
