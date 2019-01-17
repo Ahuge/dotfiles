@@ -8,18 +8,26 @@ fi
 # Uncomment the following line if you don't like systemctl's auto-paging feature:
 # export SYSTEMD_PAGER=
 
+function wrapcfg() {
+  __pd=`pwd`;
+  cd $HOME;
+  /usr/bin/git --git-dir=$HOME/.cfg --work-tree=$HOME "$@";
+  cd $__pd;
+}
+
 # User specific aliases and functions
 #export PATH="$PATH:~/bin"
 # PROMPT_COMMAND='echo -ne "\033]0;`pwd`"'
 # PROMPT_COMMAND='echo -en "\033]0; $USER: $("pwd") \a"'
 export KANBANFILE=~/.kanban.userstory.csv
+export EDITOR="vi"
 
 alias weather="curl -s wttr.in/Vancouver?m"
 alias wthr="curl -s 'wttr.in/Vancouver?format=3&m'"
 alias gd="cd $HOME/_dev"
 alias pd="echo $HOME/_dev"
 alias cl="clear"
-alias cfg='/usr/bin/git --git-dir=$HOME/.cfg --work-tree=$HOME'
+alias cfg='wrapcfg'
 alias prefs='$EDITOR ~/.bashrc'
 
 PROMPT_COMMAND='echo -en "\033]0; $("wthr_cmd")  $USER: $("pwd") \a"'
