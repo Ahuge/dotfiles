@@ -1,0 +1,5 @@
+#!/bin/bash
+
+export KANBANFILE=~/.kanban.userstory.csv
+export EDITOR="vim"
+
