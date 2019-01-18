@@ -3,4 +3,5 @@
 export KANBANFILE=~/.kanban.userstory.csv
 export EDITOR="vim"
 export BASHFILES="rc:functions:aliases:env"
+export PATH="$HOME/bin:$HOME"
 
