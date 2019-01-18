@@ -1,0 +1,8 @@
+"\e[A": history-search-backward
+"\e[B": history-search-forward
+"\e[Z": menu-complete
+set completion-ignore-case on
+set show-all-if-ambiguous on
+Control-x: '!$\015ls\015'
+
+set colored-stats on
