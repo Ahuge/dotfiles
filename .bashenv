@@ -3,5 +3,7 @@
 export KANBANFILE=~/.kanban.userstory.csv
 export EDITOR="vim"
 export BASHFILES="rc:functions:aliases:env"
-export PATH="$HOME/bin:$HOME"
+export PATH="$HOME/bin:$PATH"
+export LD_LIBRARY_PATH="$HOME/lib:$LD_LIBRARY_PATH"
+export CPATH="$HOME/include:$CPATH"
 
