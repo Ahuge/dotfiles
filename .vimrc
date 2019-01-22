@@ -52,5 +52,15 @@ if $COLORTERM == 'gnome-terminal'
     set t_Co=256
 endif
 
+
+" vim-plug plugins
+call plug#begin('~/.vim/plugins')
+
+Plug 'thiagoalessio/rainbow_levels.vim' 
+
+call plug#end()
+
+
+
 " Font
 " set gfn=:Hack\ 8
