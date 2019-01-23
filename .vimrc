@@ -18,6 +18,19 @@ set hlsearch            " highlight matches
 " set foldlevelstart=10   " open most folds by default
 
 
+" ====================================================== "
+"                   Rainbow.vim settings                 "
+" ====================================================== "
+map <leader>' :RainbowToggle<cr>
+let g:rainbow_active = 1 
+let g:rainbow_conf = {
+    \   'guifgs': ['lightgreen', 'darkmagenta', 'darkred', 'darkgreen', 'darkblue', 'red', 'magenta'],
+    \   'ctermfgs': ['lightgreen', 'darkmagenta', 'darkred', 'darkgreen', 'darkblue', 'red', 'magenta'],
+    \   'operators': '_,_',
+    \   'parentheses': ['start=/(/ end=/)/ fold', 'start=/\[/ end=/\]/ fold', 'start=/{/ end=/}/ fold'],
+    \}
+
+
 
 " Language bindings
 augroup configgroup
@@ -56,11 +69,11 @@ endif
 " vim-plug plugins
 call plug#begin('~/.vim/plugins')
 
-Plug 'thiagoalessio/rainbow_levels.vim' 
+Plug 'luochen1990/rainbow'
 
 call plug#end()
 
 
 
 " Font
-" set gfn=:Hack\ 8
+set gfn=:Hack\ 8
