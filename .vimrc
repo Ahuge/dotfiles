@@ -70,6 +70,7 @@ endif
 call plug#begin('~/.vim/plugins')
 
 Plug 'luochen1990/rainbow'
+Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 
 call plug#end()
 
