@@ -2,6 +2,10 @@
 	"segments": {
 		"right": [
             {
+                "function": "powerline.segments.common.vcs.branch",
+                "priority": 51
+            },
+            {
                 "function": "powerline.segments.common.wthr.weather",
                 "priority": 50,
                 "args": {
@@ -11,11 +15,11 @@
             },
 			{
 				"function": "powerline.segments.common.sys.uptime",
-				"priority": 50
+				"priority": 40
 			},
 			{
 				"function": "powerline.segments.common.sys.system_load",
-				"priority": 50
+				"priority": 30
 			},
 			{
 				"function": "powerline.segments.common.time.date"

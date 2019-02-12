@@ -7,3 +7,4 @@ export PATH="$HOME/bin:$PATH"
 export LD_LIBRARY_PATH="$HOME/lib:$LD_LIBRARY_PATH"
 export CPATH="$HOME/include:$CPATH"
 export LANG=en_US.UTF-8
+export TMUXINATOR_CONFIG="$HOME/.config/tmuxinator"

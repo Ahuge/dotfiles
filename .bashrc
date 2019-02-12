@@ -1,4 +1,4 @@
-0# .bashrc
+# .bashrc
 
 # Source global definitions
 if [ -f /etc/bashrc ]; then
@@ -26,7 +26,9 @@ disown
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 [[ -s ~/.autojump/etc/profile.d/autojump.sh ]] && source ~/.autojump/etc/profile.d/autojump.sh
 
+source ~/bin/tmuxinator.bash
+
 powerline-daemon -q
-POWERLINE_BASH_CONTINUATION=1
-POWERLINE_BASH_SELECT=1
+export POWERLINE_BASH_CONTINUATION=1
+export POWERLINE_BASH_SELECT=1
 . /mnt/Profiles/ahughes@netflix.local/lib/python3.7/site-packages/powerline/bindings/bash/powerline.sh

@@ -8,6 +8,11 @@ alias cl="clear"
 alias cfg='wrapcfg'
 alias open='query="$@"; src=`fzf --query="$query"` && cat $src > /tmp/vimtmp && vi /tmp/vimtmp && cat /tmp/vimtmp > $src'
 # alias fzf="fzf-tmux"
+alias gs="git status"
+alias grm="git rebase origin/master"
+alias gri="git rebase --interactive --autosquash"
+alias tmnew="tmuxinator new"
+alias tmstart="tmuxinator start"
 
 alias gif="tmppalette=/tmp/palette.png; tmpvid=/tmp/cap.mp4; rm -f `$tmppalette` `$tmpvid`; ffmpeg -video_size 1920x1080 -framerate 25 -f x11grab -i :100.0+0,0 $tmpvifd && ffmpeg -ss 5.0 -i $tmpvid -filter_complex [0:v] palettegen $tmppalette && ffmpeg -ss 5.0 -i $tmpvid -i $tmppalette -filter_complex [0:v][1:v] paletteuse output.gif"
 
