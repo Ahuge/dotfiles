@@ -11,6 +11,7 @@ alias open='query="$@"; src=`fzf --query="$query"` && cat $src > /tmp/vimtmp && 
 alias gs="git status"
 alias grm="git rebase origin/master"
 alias gri="git rebase --interactive --autosquash"
+alias gdif="git diff --pretty --color=always"
 alias tmnew="tmuxinator new"
 alias tmstart="tmuxinator start"
 
