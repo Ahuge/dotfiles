@@ -1,6 +1,7 @@
 {
 	"groups": {
         "branch":               { "fg": "solarized:base1", "bg": "solarized:base02", "attrs": [] },
+        "branch:divider":       { "fg": "solarized:base1", "bg": "solarized:base02", "attrs": [] },
 		"active_window_status": { "fg": "solarized:blue",   "bg": "solarized:base02", "attrs": [] },
 		"window_status":        { "fg": "solarized:base1",  "bg": "solarized:base02", "attrs": [] },
 		"activity_status":      { "fg": "solarized:yellow", "bg": "solarized:base02", "attrs": [] },
@@ -10,6 +11,7 @@
 		"window:current":       { "fg": "solarized:base3",  "bg": "solarized:base01", "attrs": [] },
 		"window_name":          { "fg": "solarized:base3",  "bg": "solarized:base01", "attrs": ["bold"] },
 		"session":              { "fg": "solarized:base3",  "bg": "solarized:base01", "attrs": [] },
-		"session:prefix":       { "fg": "solarized:base01", "bg": "solarized:base3",  "attrs": [] }
+		"session:prefix":       { "fg": "solarized:base01", "bg": "solarized:base3",  "attrs": [] },
+        "weather":              { "fg": "solarized:base3",  "bg": "alex:heather",     "attrs": ["bold"] }
 	}
 }

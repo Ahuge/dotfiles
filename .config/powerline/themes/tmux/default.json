@@ -6,17 +6,13 @@
                 "priority": 51
             },
             {
-                "function": "powerline.segments.common.wthr.weather",
+                "function": "segments.wttr.weather",
                 "priority": 50,
                 "args": {
                     "unit": "C",
-                    "location_query": "vancouver, canada"
+                    "location_query": "Vancouver"
                 }
             },
-			{
-				"function": "powerline.segments.common.sys.uptime",
-				"priority": 40
-			},
 			{
 				"function": "powerline.segments.common.sys.system_load",
 				"priority": 30
