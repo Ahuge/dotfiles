@@ -1,21 +1,28 @@
 #!/bin/bash
-
+DEVELOPMENT_LIBRARIES="gcc gcc-c++ zlib zlib-devel libffi-devel openssl openssl-devel python-devel qt-devel qt qt-webkit-devel libxml2-devel libxslt-devel rpmdevtools python-pip";
 echo "===============================";
 read -r -p "Install dev utils? [y/N] " installDev
 if [[ "$installDev" =~ ^([yY][eE][sS]|[yY])+$ ]]
 then
-	yum -y install cmake git gcc gcc-c++ zlib zlib-devel libffi-devel openssl openssl-devel python-devel qt-devel qt;
+	echo -e "Installing development libraries\e[90m";
+	yum -y install $DEVELOPMENT_LIBRARIES;
+	echo -e "\e[37mInstalling development tools\e[90m";
+	yum -y install cmake git htop;
+	echo -e "\e[37m";
 fi
 
 read -r -p "Install Python3 to home directory? [y/N] " installPy3Home
 if [[ "$installPy3Home" =~ ^([yY][eE][sS]|[yY])+$ ]]
 then
-	yum -y install gcc gcc-c++ zlib zlib-devel libffi-devel openssl openssl-devel python-devel;
+	echo -e "Installing development libraries\e[90m";
+	yum -y install $DEVELOPMENT_LIBRARIES;
 	mkdir /tmp;
 	cd /tmp;
+	echo -e "\e[37mDownloading Python3.7.2\e[90m";
 	wget https://www.python.org/ftp/python/3.7.2/Python-3.7.2.tar.xz;
 	tar -xzf Python-3.7.2.tar.xz;
 	cd Python-3.7.2;
+	echo -e "\e[37mBuilding Python3\e[90m";
 	./configure --prefix=$HOME --enable-optimizations;
 	make;
 	make test;
@@ -23,19 +30,21 @@ then
 
 	# Link libs
 	ln -s /usr/lib64/libpython2.7.so.1.0 /usr/lib64/libpython2.7.so
+	echo -e "\e[37m";
 fi
 
 read -r -p "Install PySide? [y/N] " installPySide
 if [[ "$installPySide" =~ ^([yY][eE][sS]|[yY])+$ ]]
 then
 	# Pyside
-	echo "Installing PySide for Python2 (System)";
+	echo -e "Installing PySide for Python2 (System)\e[90m";
 	pip2 install pyside;
 	if [[ "$installPy3Home" =~ ^([yY][eE][sS]|[yY])+$ ]]
 	then
-		echo "Installing PySide2 for Python3 (HomeDir)";
+		echo -e "\e[37mInstalling PySide2 for Python3 (HomeDir)\e[90m";		
 		pip3 install PySide2;
 	fi
+	echo -e "\e[37m";
 fi
 
 read -r -p "Install Powerline? [y/N] " installPowerline
@@ -49,8 +58,10 @@ then
 		cd fonts;
 		./install.sh;
 	else
-		echo "ERROR: Powerline requires Python3 installed";
+		echo -e "\e[31mERROR: Powerline requires Python3 installed";
 	fi
+
+	echo -e "\e[37m";
 fi
 
 read -r -p "Install ShotgunToolkit? [y/N] " installSgTk
@@ -93,7 +104,7 @@ class Bootstrap(sgtk.get_hook_baseclass()):
         self.configuration_descriptor = configuration_descriptor
 
 EOM
-
+s
 fi
 
 
