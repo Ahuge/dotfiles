@@ -11,3 +11,5 @@ export TMUXINATOR_CONFIG="$HOME/.config/tmuxinator"
 
 # Powerline
 export PYTHONPATH="$PYTHONPATH:$HOME/.config/powerline"
+
+export CMAKE_ROOT=$HOME
