@@ -1,0 +1,67 @@
+#!/bin/bash
+
+function print_usage() {
+    echo -e "usage: git-zip-release [-h] [-f]release_name"
+}
+
+
+function print_help() {
+    print_usage;
+    echo -e """
+positional_argumenmts:
+    release_name    Name of the release. This will be appended to the name of the zip
+
+optional_arguments:
+    -h, --help      show this help message and exit
+    -f, --flat      If provided, do not simulate a containing folder.
+                    For example. If you are in a folder `foo`, a `foo` will exist in the root of the zip by default.
+                    Passing this flag will stop that behaviour. 
+"""
+}
+
+FLAT=0;
+
+((!$#)) && echo -e  "\033[0;31mNo release name, command ignored!\033[0;m" && print_help && exit 1;
+
+if [ "$1" == "-h" ]; then
+    print_help;
+    exit 0;
+elif [ "$1" == "-f" ] || [ "$1" == "--flat" ]; then
+    FLAT=1;
+elif [[ "$1" =~ \-.* ]]; then
+    print_usage;
+    exit 1;
+fi
+
+ _REPO_NAME=`basename \`git rev-parse --show-toplevel\``
+RELEASE_DIR=".releases";
+_PWD=`basename \`pwd\``
+RELEASE_NAME="${@: -1}";
+
+if [ ! -d "$RELEASE_DIR" ]; then
+    mkdir $RELEASE_DIR;
+fi
+
+if [ $FLAT == 0 ]; then
+    CONTAINING_COMMAND="xargs -I {} echo `basename \`pwd\``/{}";
+    RELEASE_DIR="$_PWD/$RELEASE_DIR";
+else
+    CONTAINING_COMMAND="tr '\n' '\n'";
+fi
+
+_TRACKED_FILES=`git ls-tree --full-tree -r --name-only HEAD | tr '\n' ' ' | awk '{for(i=1;i<=NF;++i)if($i!~/^\./)print $i}' | $CONTAINING_COMMAND | tr '\n' ' '`;
+
+
+if [ $FLAT == 0 ]; then
+    cd ../;
+fi
+
+echo "Executing: \"zip $RELEASE_DIR/$_REPO_NAME-$RELEASE_NAME.zip -r $_TRACKED_FILES\"";
+zip $RELEASE_DIR/$_REPO_NAME-$RELEASE_NAME.zip -r $_TRACKED_FILES 
+
+if [ $FLAT == 0 ];then 
+    cd $_PWD;
+fi
+
+
+
