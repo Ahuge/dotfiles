@@ -14,7 +14,7 @@ positional_argumenmts:
 optional_arguments:
     -h, --help      show this help message and exit
     -f, --flat      If provided, do not simulate a containing folder.
-                    For example. If you are in a folder `foo`, a `foo` will exist in the root of the zip by default.
+                    For example. If you are in a folder \`foo\`, a \`foo\` will exist in the root of the zip by default.
                     Passing this flag will stop that behaviour. 
 """
 }
