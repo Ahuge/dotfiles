@@ -1,13 +1,80 @@
 #!/bin/bash
 DEVELOPMENT_LIBRARIES="gcc gcc-c++ zlib zlib-devel libffi-devel openssl openssl-devel python-devel qt-devel qt qt-webkit-devel libxml2-devel libxslt-devel rpmdevtools python-pip";
+DOCKER_LIBRARIES="yum-utils device-mapper-persistent-data lvm2";
+DOCKER_YUM_REPO="https://download.docker.com/linux/centos/docker-ce.repo"
+
+PYSIDE_DOWNLOAD_URL="https://pypi.python.org/packages/source/P/PySide/PySide-1.2.4.tar.gz";
+RIPGREP_DOWNLOAD_URL="https://github.com/BurntSushi/ripgrep/releases/download/0.10.0/ripgrep-0.10.0-x86_64-unknown-linux-musl.tar.gz";
+CHEFDK_DOWNLOAD_URL="https://packages.chef.io/files/stable/chefdk/3.8.14/el/7/chefdk-3.8.14-1.el7.x86_64.rpm"
+
+
+function isallowed { hash "$@" 2>/dev/null && { echo 1; } || { echo 0; } }
+
+
+
+PYTHON3_INSTALLED=`isallowed python3`;
+PIP3_INSTALLED=`isallowed pip3`;
+CHEF_INSTALLED=`isallowed chef`;
+DOCKER_INSTALLED=`isallowed docker`;
+KITCHEN_INSTALLED=`isallowed kitchen`;
+echo $PIP3_INSTALLED;
+
 echo "===============================";
 read -r -p "Install dev utils? [y/N] " installDev
 if [[ "$installDev" =~ ^([yY][eE][sS]|[yY])+$ ]]
 then
 	echo -e "Installing development libraries\e[90m";
-	yum -y install $DEVELOPMENT_LIBRARIES;
+	sudo yum -y install $DEVELOPMENT_LIBRARIES;
 	echo -e "\e[37mInstalling development tools\e[90m";
-	yum -y install cmake git htop;
+	sudo yum -y install cmake git htop;
+
+    echo -e "\e[37mInstalling Ripgrep v0.10.0\e[90m";
+    mkdir /tmp/ripgrep;
+    cd /tmp/ripgrep;
+    wget $RIPGREP_DOWNLOAD_URL;
+    _rg_filename=${RIPGREP_DOWNLOAD_URL##*/};
+    _rg_basename_tar=${_rg_filename%.*};
+    _rg_basename=${_rg_basename_tar%.*};
+    tar -xvzf $_rg_filename;
+    cd $_rg_basemame;
+    cp rg $HOME/bin/;
+    cd /tmp;
+    rm -rf /tmp/ripgrep;
+     
+    echo -e "\e[37m";
+
+    read -r -p "Install Chef Dk? [y/N] " installChefDK
+    if [[ "$installChefDK" =~ ^([yY][eE][sS]|[yY])+$ ]]
+    then
+        cd /tmp;
+        wget $CHEFDK_DOWNLOAD_URL;
+        echo -e "\e[37mInstalling ChefDK\e[90m";
+        sudo yum -y install ${CHEFDK_DOWNLOAD_URL##*/};
+        rm -rf ${CHEFDK_DOWNLOAD_URL##*/};
+        CHEF_INSTALLED=`isallowed chef`;
+    fi
+
+    echo -e "\e[37m";
+    read -r -p "Install Docker? [y/N] " installDocker
+    if [[ "$installDocker" =~ ^([yY][eE][sS]|[yY])+$ ]]
+    then
+        sudo yum -y install $DOCKER_LIBRARIES;
+        sudo yum-config-manager --add-repo $DOCKER_YUM_REPO;
+        sudo yum install -y docker-ce docker-ce-cli containerd.io;
+        DOCKER_INSTALLED=`isallowed docker`;
+    fi
+
+    read -r -p "Install Test-Kitchen Docker? [y/N] " installTestKitchen
+    if [[ "$installTestKitchen" =~ ^([yY][eE][sS]|[yY])+$ ]]
+    then
+        if [ $CHEF_INSTALLED ] && [ $DOCKER_INSTALLED ]
+        then
+            sudo chef gem install kitchen-docker
+            echo "Do!";
+        else
+            echo -e "\e[31mERROR: Test-Kitchen requires Chef & Docker installed";
+        fi
+    fi
 	echo -e "\e[37m";
 fi
 
@@ -15,21 +82,22 @@ read -r -p "Install Python3 to home directory? [y/N] " installPy3Home
 if [[ "$installPy3Home" =~ ^([yY][eE][sS]|[yY])+$ ]]
 then
 	echo -e "Installing development libraries\e[90m";
-	yum -y install $DEVELOPMENT_LIBRARIES;
-	mkdir /tmp;
-	cd /tmp;
+	sudo yum -y install $DEVELOPMENT_LIBRARIES;
+	mkdir /tmp/python3_build;
+	cd /tmp/python3_build;
 	echo -e "\e[37mDownloading Python3.7.2\e[90m";
 	wget https://www.python.org/ftp/python/3.7.2/Python-3.7.2.tar.xz;
 	tar -xzf Python-3.7.2.tar.xz;
 	cd Python-3.7.2;
 	echo -e "\e[37mBuilding Python3\e[90m";
 	./configure --prefix=$HOME --enable-optimizations;
-	make;
-	make test;
-	make install;
+	sudo make;
+	sudo make test;
+	sudo make install;
 
 	# Link libs
 	ln -s /usr/lib64/libpython2.7.so.1.0 /usr/lib64/libpython2.7.so
+    PYTHON3_INSTALLED=`isallowed python3`;
 	echo -e "\e[37m";
 fi
 
@@ -38,8 +106,17 @@ if [[ "$installPySide" =~ ^([yY][eE][sS]|[yY])+$ ]]
 then
 	# Pyside
 	echo -e "Installing PySide for Python2 (System)\e[90m";
-	pip2 install pyside;
-	if [[ "$installPy3Home" =~ ^([yY][eE][sS]|[yY])+$ ]]
+	sudo yum install -y python-pyside shiboken shiboken-python2-libs shiboken-python2-devel;
+	# pip2 install wheel;
+	# cd /tmp;
+	# mkdir pyside_build;
+	# cd pyside_build;
+	# wget $PYSIDE_DOWNLOAD_URL;
+	# tar -xvzf ${PYSIDE_DOWNLOAD_URL##*/};
+	# cd ${PYSIDE_DOWNLOAD_URL%.*};
+	# python2.7 setup.py bdist_wheel --qmake=/usr/bin/qmake-qt4 --standalone;
+	
+	if [[ "$installPy3Home" =~ ^([yY][eE][sS]|[yY])+$ ]] || [ $PYTHON3_INSTALLED ]
 	then
 		echo -e "\e[37mInstalling PySide2 for Python3 (HomeDir)\e[90m";		
 		pip3 install PySide2;
@@ -51,7 +128,7 @@ read -r -p "Install Powerline? [y/N] " installPowerline
 if [[ "$installPowerline" =~ ^([yY][eE][sS]|[yY])+$ ]]
 then
 	# install powerline
-	if [[ "$installPy3Home" =~ ^([yY][eE][sS]|[yY])+$ ]]
+	if [[ "$installPy3Home" =~ ^([yY][eE][sS]|[yY])+$ ]] || [ $PYTHON3_INSTALLED ]
 	then
 		pip3 install powerline-status;
 		git clone git@github.com:powerline/fonts.git;
@@ -69,12 +146,12 @@ if [[ "$installSgTk" =~ ^([yY][eE][sS]|[yY])+$ ]]
 then
 	# Install sgtk python
 	echo "Install Shotgun Python api";
-	pip2 install git+https://github.com/shotgunsoftware/python-api@v3.0.39;
+	sudo pip2 install git+https://github.com/shotgunsoftware/python-api@v3.0.39;
 	echo "Install Shotgun Tooklit";
-	pip2 install git+https://github.com/shotgunsoftware/tk-core@v0.18.163;
-	mkdir "/usr/lib/python2.7/hooks";
-	touch /usr/lib/python2.7/hooks/bootstrap.py;
-	cat > "/usr/lib/python2.7/hooks/bootstrap.py" << EOM
+	sudo pip2 install git+https://github.com/shotgunsoftware/tk-core@v0.18.163;
+	sudo mkdir "/usr/lib/python2.7/hooks";
+	sudo touch /usr/lib/python2.7/hooks/bootstrap.py;
+	sudo cat > "/usr/lib/python2.7/hooks/bootstrap.py" << EOM
 
 #!/usr/env python
 import sgtk
@@ -104,7 +181,6 @@ class Bootstrap(sgtk.get_hook_baseclass()):
         self.configuration_descriptor = configuration_descriptor
 
 EOM
-s
 fi
 
 
