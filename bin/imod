@@ -1,0 +1,357 @@
+#!/usr/bin/env python3
+# imod
+import argparse
+from functools import wraps
+import errno
+import os
+import signal
+import sys
+import tty
+import termios
+import time
+
+
+class TimeoutError(Exception):
+    pass
+
+def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
+    def decorator(func):
+        def _handle_timeout(signum, frame):
+            raise TimeoutError(error_message)
+
+        def wrapper(*args, **kwargs):
+            signal.signal(signal.SIGALRM, _handle_timeout)
+            signal.alarm(seconds)
+            try:
+                result = func(*args, **kwargs)
+            finally:
+                signal.alarm(0)
+            return result
+
+        return wraps(func)(wrapper)
+
+    return decorator
+
+
+class ExitError(BaseException):
+    """Thrown when the program want's to exit"""
+
+
+class Cursor(object):
+    def __init__(self, x, y, screen_size=(3,1)):
+        super(Cursor, self).__init__()
+
+        self._x = x
+        self._y = y
+        self._xmin = 0
+        self._xmax = screen_size[0]-1
+        self._ymin = 0
+        self._ymax = screen_size[1]-1
+
+    @property
+    def x(self):
+        return self._x
+
+    @property
+    def y(self):
+        return self._y
+
+    def _safe(self, x, y):
+        return min([max([self._xmin, x]), self._xmax]), min([max([self._ymin, y]), self._ymax])
+
+    def xmove(self, count):
+        return Cursor(*self._safe(self._x + count, self._y))
+
+    def ymove(self, count):
+        return Cursor(*self._safe(self._x, self._y + count))
+
+
+class ByteFactory(object):
+    NULL_CHAR = "-"
+    READ_CHAR = "r"
+    WRITE_CHAR = "w"
+    EXECUTE_CHAR = "x"
+
+    class ByteBase(object):
+        INT_VALUE = -1
+        STR_VALUE = ""
+        def __int__(self):
+            return self.INT_VALUE
+        def __or__(self, other):
+            return self.INT_VALUE | other
+        def __format__(self, format_spec):
+            if format_spec.split(":")[-1] == "s":
+                return self.STR_VALUE
+            return str(self.INT_VALUE)
+
+    class NullByte(ByteBase): INT_VALUE = 0; STR_VALUE = "-"
+    class ExecuteByte(ByteBase): INT_VALUE = 1; STR_VALUE = "x"
+    class WriteByte(ByteBase): INT_VALUE = 2; STR_VALUE = "w"
+    class ReadByte(ByteBase): INT_VALUE = 4; STR_VALUE = "r"
+
+    @staticmethod
+    def bytes_from_int(number):
+        r_byte = w_byte = x_byte = ByteFactory.NullByte()
+        if ByteFactory.ReadByte() | number == number:
+            r_byte = ByteFactory.ReadByte()
+        if ByteFactory.WriteByte() | number == number:
+            w_byte = ByteFactory.WriteByte()
+        if ByteFactory.ExecuteByte() | number == number:
+            x_byte = ByteFactory.ExecuteByte()
+        return r_byte, w_byte, x_byte
+
+
+    @staticmethod
+    def parse_byte(char):
+        if isinstance(char, ByteFactory.ByteBase):
+            return char
+        if char == ByteFactory.NULL_CHAR:
+            return ByteFactory.NullByte()
+        elif char == ByteFactory.READ_CHAR:
+            return ByteFactory.ReadByte()
+        elif char == ByteFactory.WRITE_CHAR:
+            return ByteFactory.WriteByte()
+        elif char == ByteFactory.EXECUTE_CHAR:
+            return ByteFactory.ExecuteByte()
+        raise ValueError("Unknown char \"%s\"" % char)
+
+    @staticmethod
+    def int_bytes(bytes):
+        return sum(bytes)
+
+    @staticmethod
+    def str_bytes(bytes):
+        return "".join(map(str, bytes))
+
+
+class Octal(object):
+    _MAX_OCT = 7
+    _MIX_OCT = 0
+
+    def __init__(self, read, write, execute):
+        super(Octal, self).__init__()
+        self._read = ByteFactory.parse_byte(read)
+        self._write = ByteFactory.parse_byte(write)
+        self._execute = ByteFactory.parse_byte(execute)
+
+    def __int__(self):
+        return sum([int(self._read), int(self._write), int(self._execute)])
+
+    def __str__(self):
+        return "{read:s}{write:s}{execute:s}".format(
+            read=self._read,
+            write=self._write,
+            execute=self._execute,
+        )
+
+    def __repr__(self):
+        return "<Octal %d>" % int(self)
+
+    def __format__(self, format_spec):
+        if format_spec.split(":")[-1] == "d":
+            return str(int(self))
+        return str(self)
+
+    @staticmethod
+    def from_int(value):
+        safe_value = max([min([value, Octal._MAX_OCT]), Octal._MIX_OCT])
+        return Octal(*ByteFactory.bytes_from_int(safe_value))
+
+    def rotate(self, offset):
+        self.set_value(int(self) + offset)
+
+    def set_value(self, value):
+        safe_value = max([min([value, self._MAX_OCT]), self._MIX_OCT])
+        self._read, self._write, self._execute = ByteFactory.bytes_from_int(safe_value)
+
+    def set_mode(self, mode):
+        if len(mode) > 1:
+            bytes = [int(ByteFactory.parse_byte(char)) for char in mode]
+        else:
+            bytes = [int(ByteFactory.parse_byte(mode))]
+        int_mode = ByteFactory.int_bytes(bytes)
+        safe_value = max([min([int_mode, self._MAX_OCT]), self._MIX_OCT])
+        self._read, self._write, self._execute = ByteFactory.bytes_from_int(safe_value)
+
+    @staticmethod
+    def _to_int(value):
+        if isinstance(value, str):
+            if len(value) != 3:
+                raise ValueError("\"%s\" may not be an octal string... Could not convert to int")
+            ByteFactory.int_bytes([ByteFactory.parse_byte(char) for char in value.split()])
+        elif isinstance(value, int):
+            return value
+        raise ValueError("Unknown \"%s\"" % value)
+
+
+
+class OctalState(object):
+    ESCAPE_CHARACER = "\033"
+    EXTRA_CHARACTER = "["
+    CTRL_C_CHARACTER = "\003"
+    RETURN_CHARACTER = "\012"
+    CARRIAGE_RETURN_CHARACTER = "\015"
+    ROTATE_UP = ESCAPE_CHARACER + EXTRA_CHARACTER + "A"
+    ROTATE_DOWN = ESCAPE_CHARACER + EXTRA_CHARACTER + "B"
+    MOVE_RIGHT = ESCAPE_CHARACER + EXTRA_CHARACTER + "C"
+    MOVE_LEFT = ESCAPE_CHARACER + EXTRA_CHARACTER + "D"
+
+    MOVEMENT_CHARACTERS = [MOVE_LEFT, MOVE_RIGHT]
+    ROTATE_CHARACTERS = [ROTATE_UP, ROTATE_DOWN]
+    OCTAL_NUMBER_CHARACTERS = ["0", "1", "2", "3", "4", "5", "6", "7"]
+    ASCII_MODE_CHARACTERS = ["r", "w", "x", "-"]
+    WATCHED_CHARACTERS = MOVEMENT_CHARACTERS + ROTATE_CHARACTERS + OCTAL_NUMBER_CHARACTERS + ASCII_MODE_CHARACTERS
+    def __init__(self, file):
+        super(OctalState, self).__init__()
+
+        self._file = file
+        self._file_mode = str(oct(os.stat(file).st_mode & 0o777)[-3:])
+
+        self.cursor = Cursor(0, 0)
+        self._owner_oct = Octal.from_int(int(self._file_mode[0]))
+        self._group_oct = Octal.from_int(int(self._file_mode[1]))
+        self._other_oct = Octal.from_int(int(self._file_mode[2]))
+
+    def _get_octal_from_cursor(self):
+        if self.cursor.x == 0:
+            return self._owner_oct
+        if self.cursor.x == 1:
+            return self._group_oct
+        if self.cursor.x == 2:
+            return self._other_oct
+        raise ValueError("Could not turn cursor position %d into octal" % self.cursor.x)
+
+    def _update(self, char):
+        if char in self.MOVEMENT_CHARACTERS:
+            if char == self.MOVE_LEFT:
+                self.cursor = self.cursor.xmove(-1)
+            else:
+                self.cursor = self.cursor.xmove(1)
+        elif char in self.ROTATE_CHARACTERS:
+            octal = self._get_octal_from_cursor()
+            if char == self.ROTATE_DOWN:
+                octal.rotate(-1)
+            else:
+                octal.rotate(1)
+        elif char in self.OCTAL_NUMBER_CHARACTERS:
+            octal = self._get_octal_from_cursor()
+            octal.set_value(int(char))
+        elif char in self.ASCII_MODE_CHARACTERS or len(char) > 1 and all([c in self.ASCII_MODE_CHARACTERS for c in char]):
+            octal = self._get_octal_from_cursor()
+            octal.set_mode(char)
+        elif char == self.CTRL_C_CHARACTER:
+            raise ExitError(0)
+        elif char == self.CARRIAGE_RETURN_CHARACTER:
+            self.apply()
+        else:
+            sys.stdout.write((" " * 80) +"Could not parse character \"%s\"" % char.strip("\n"))
+        self._render()
+
+    def _render(self):
+        template = """\r{owner_octal:d}{group_octal:d}{other_octal:d}\t({owner_octal:s}{group_octal:s}{other_octal:s}) {file}"""
+        msg = template.format(
+            owner_octal=self._owner_oct,
+            group_octal=self._group_oct,
+            other_octal=self._other_oct,
+            file=self._file,
+        )
+        _move_command = self._move_cursor_command(msg)
+        sys.stdout.write(msg + _move_command)
+        sys.stdout.flush()
+
+    def _move_cursor_command(self, message):
+        command = "\033[D" * (len(message)+3-self.cursor.x)
+        return command
+
+    def rotate_octal(self, position, count):
+        if position == 0:
+            self._owner_oct.rotate(count)
+        elif position == 1:
+            self._group_oct.rotate(count)
+        elif position == 2:
+            self._other_oct.rotate(count)
+        raise ValueError("Unknown position: %s" % position)
+
+    def set_octal(self, position, number):
+        if position == 0:
+            self._owner_oct.set_value(number)
+        if position == 1:
+            self._group_oct.set_value(number)
+        if position == 2:
+            self._other_oct.set_value(number)
+
+    def read_char(self, count=1):
+        return sys.stdin.read(count)
+
+    @timeout(seconds=1)
+    def read_char_timeout(self, count=1):
+        return self.read_char(count=count)
+
+    def apply(self):
+        sys.stdout.write("\r\n")
+        values = "".join(map(str, map(int, [self._owner_oct, self._group_oct, self._other_oct])))
+        print("chmod %s %s" % (values, self._file))
+        sys.stdout.write("\r\n")
+        os.system("chmod %s %s" % (values, self._file))
+        raise ExitError(0)
+
+    def run(self):
+        self._render()
+        while True:
+            character = self.read_char()
+            # if character == "\n":
+            #     continue
+            # if character == "x":
+            #     break
+            # elif character == self.CARRIAGE_RETURN_CHARACTER:
+            if character in self.ASCII_MODE_CHARACTERS:
+                buffer = character
+                while True:
+                    try:
+                        buffer += self.read_char_timeout()
+                    except TimeoutError:
+                        character = buffer
+                        break
+
+            if character == self.ESCAPE_CHARACER:
+                buffer = character
+                buffer += self.read_char()
+                while any([pattern.startswith(buffer) for pattern in self.WATCHED_CHARACTERS]):
+                    buffer += self.read_char()
+                    if buffer in self.WATCHED_CHARACTERS:
+                        character = buffer
+                        break
+                else:
+                    sys.exit(0)
+            # self.read_char()
+            self._update(character)
+
+            # time.sleep(0.2)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser("imod - Interactive Mode editor for Unix")
+    parser.add_argument("file", default="/tmp/mmsolver/test.txt")
+    args = parser.parse_args()
+    return args
+
+
+def main():
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    tty.setraw(sys.stdin)
+    args = parse_args()
+    file = args.file
+    state = OctalState(file)
+    code = 0
+    try:
+        state.run()
+    except ExitError as err:
+        code = int(str(err))
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    return code
+
+
+if __name__ == "__main__":
+    sys.exit(main())
