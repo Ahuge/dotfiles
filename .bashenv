@@ -13,3 +13,10 @@ export TMUXINATOR_CONFIG="$HOME/.config/tmuxinator"
 export PYTHONPATH="$PYTHONPATH:$HOME/.config/powerline"
 
 export CMAKE_ROOT=$HOME
+
+# vfx-rpms
+export PATH="/vfx/bin:$PATH"
+export PYTHONPATH="/vfx/lib64/python2.7/site-packages:$PYTHONPATH"
+export LD_LIBRARY_PATH="/vfx/lib:/vfx/lib64:$LD_LIBRARY_PATH"
+export CPATH="/vfx/include:$CPATH"
+
