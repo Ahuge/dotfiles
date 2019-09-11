@@ -32,12 +32,21 @@ let g:rainbow_conf = {
 
 
 
+" Strip trailing whitespace and newlines on save
+fun! <SID>StripTrailingWhitespace()
+    let l = line(".")
+    let c = col(".")
+    %s/\s\+$//e
+    %s/\($\n\s*\)\+\%$//e
+    call cursor(l, c)
+endfun
+
+
 " Language bindings
 augroup configgroup
     autocmd!
     autocmd VimEnter * highlight clear SignColumn
-    autocmd BufWritePre *.php,*.py,*.js,*.txt,*.hs,*.java,*.md
-                \:call <SID>StripTrailingWhitespaces()
+    autocmd BufWritePre *.php,*.py,*.js,*.txt,*.hs,*.java,*.md :call <SID>StripTrailingWhitespace()
     autocmd FileType java setlocal noexpandtab
     autocmd FileType java setlocal list
     autocmd FileType java setlocal listchars=tab:+\ ,eol:-
@@ -51,6 +60,8 @@ augroup configgroup
     autocmd FileType ruby setlocal softtabstop=2
     autocmd FileType ruby setlocal commentstring=#\ %s
     autocmd FileType python setlocal commentstring=#\ %s
+    autocmd FileType python map <buffer> <F3> :call flake8#Flake8()<CR>
+    autocmd FileType python map <buffer> <F4> :call flake8#Flake8UnplaceMarkers()<CR>
     autocmd BufEnter *.cls setlocal filetype=java
     autocmd BufEnter *.zsh-theme setlocal filetype=zsh
     autocmd BufEnter Makefile setlocal noexpandtab
@@ -58,6 +69,10 @@ augroup configgroup
     autocmd BufEnter *.sh setlocal shiftwidth=2
     autocmd BufEnter *.sh setlocal softtabstop=2
 augroup END
+
+
+highlight OverLength ctermbg=darkred ctermfg=white guibg=#FFD9D9
+match OverLength /\%100v.*/
 
 
 " Enable 256 colors palette in Gnome Terminal
@@ -71,8 +86,13 @@ call plug#begin('~/.vim/plugins')
 
 Plug 'luochen1990/rainbow'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
+Plug 'nvie/vim-flake8'
 
 call plug#end()
+
+let g:flake8_quickfix_location="topleft"
+let g:flake8_show_in_gutter=1
+let g:flake8_show_in_file=1
 
 " python from powerline.vim import setup as powerline_setup
 " python powerline_setup()
@@ -81,3 +101,17 @@ call plug#end()
 
 " Font
 set gfn=:Hack\ 8
+
+
+
+function SpecialPaste()
+    echo "Set paste!"
+    set paste
+    <i>
+    <C-S-v>
+    set nopaste
+    return ""
+endfunction
+
+
+:nmap <leader>xx "=SpecialPaste()
