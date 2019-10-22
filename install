@@ -1,23 +1,32 @@
 #!/bin/bash
-DEVELOPMENT_LIBRARIES="gcc gcc-c++ zlib zlib-devel libffi-devel openssl openssl-devel python-devel qt-devel qt qt-webkit-devel libxml2-devel libxslt-devel rpmdevtools python-pip";
+DEVELOPMENT_LIBRARIES="gcc gcc-c++ zlib zlib-devel libffi-devel openssl openssl-devel python-devel qt-devel qt qt-webkit-devel libxml2-devel libxslt-devel rpmdevtools python-pip curl git";
 DOCKER_LIBRARIES="yum-utils device-mapper-persistent-data lvm2";
 DOCKER_YUM_REPO="https://download.docker.com/linux/centos/docker-ce.repo"
 
-PYSIDE_DOWNLOAD_URL="https://pypi.python.org/packages/source/P/PySide/PySide-1.2.4.tar.gz";
 RIPGREP_DOWNLOAD_URL="https://github.com/BurntSushi/ripgrep/releases/download/0.10.0/ripgrep-0.10.0-x86_64-unknown-linux-musl.tar.gz";
 CHEFDK_DOWNLOAD_URL="https://packages.chef.io/files/stable/chefdk/3.8.14/el/7/chefdk-3.8.14-1.el7.x86_64.rpm"
+RUSTUP_DOWNLOAD_URL="https://sh.rustup.rs"
+LINUXBREW_DOWNLOAD_URL="https://raw.githubusercontent.com/Linuxbrew/install/master/install.sh"
+
+function isallowed { 
+  if hash "$@" 2>/dev/null 
+  then 
+    echo 1;
+  else
+    echo 0;
+  fi
+}
 
 
-function isallowed { hash "$@" 2>/dev/null && { echo 1; } || { echo 0; } }
-
-
-
-PYTHON3_INSTALLED=`isallowed python3`;
-PIP3_INSTALLED=`isallowed pip3`;
-CHEF_INSTALLED=`isallowed chef`;
-DOCKER_INSTALLED=`isallowed docker`;
-KITCHEN_INSTALLED=`isallowed kitchen`;
+PYTHON3_INSTALLED=$(isallowed python3);
+PIP3_INSTALLED=$(isallowed pip3);
+CHEF_INSTALLED=$(isallowed chef);
+DOCKER_INSTALLED=$(isallowed docker);
 echo $PIP3_INSTALLED;
+
+echo -e "Installing Development Group \e[90m"
+sudo yum groupinstall 'Development Tools'
+echo -e "\e[37m"
 
 echo "===============================";
 read -r -p "Install dev utils? [y/N] " installDev
@@ -30,15 +39,15 @@ then
 
     echo -e "\e[37mInstalling Ripgrep v0.10.0\e[90m";
     mkdir /tmp/ripgrep;
-    cd /tmp/ripgrep;
+    cd /tmp/ripgrep || (echo "Failed going to /tmp/ripgrep"; exit);
     wget $RIPGREP_DOWNLOAD_URL;
     _rg_filename=${RIPGREP_DOWNLOAD_URL##*/};
     _rg_basename_tar=${_rg_filename%.*};
     _rg_basename=${_rg_basename_tar%.*};
     tar -xvzf $_rg_filename;
-    cd $_rg_basemame;
+    cd $_rg_basename || (echo "Failed going to $_rg_basename"; exit);
     cp rg $HOME/bin/;
-    cd /tmp;
+    cd /tmp || (echo "Failed going to /tmp"; exit);
     rm -rf /tmp/ripgrep;
      
     echo -e "\e[37m";
@@ -46,12 +55,12 @@ then
     read -r -p "Install Chef Dk? [y/N] " installChefDK
     if [[ "$installChefDK" =~ ^([yY][eE][sS]|[yY])+$ ]]
     then
-        cd /tmp;
+        cd /tmp || (echo "Failed going to /tmp"; exit);
         wget $CHEFDK_DOWNLOAD_URL;
         echo -e "\e[37mInstalling ChefDK\e[90m";
         sudo yum -y install ${CHEFDK_DOWNLOAD_URL##*/};
         rm -rf ${CHEFDK_DOWNLOAD_URL##*/};
-        CHEF_INSTALLED=`isallowed chef`;
+        CHEF_INSTALLED=$(isallowed chef);
     fi
 
     echo -e "\e[37m";
@@ -61,7 +70,7 @@ then
         sudo yum -y install $DOCKER_LIBRARIES;
         sudo yum-config-manager --add-repo $DOCKER_YUM_REPO;
         sudo yum install -y docker-ce docker-ce-cli containerd.io;
-        DOCKER_INSTALLED=`isallowed docker`;
+        DOCKER_INSTALLED=$(isallowed docker);
     fi
 
     read -r -p "Install Test-Kitchen Docker? [y/N] " installTestKitchen
@@ -78,17 +87,49 @@ then
 	echo -e "\e[37m";
 fi
 
+read -r -p "Install Rust to home directory? [y/N] " installRustHome
+if [[ "$installRustHome" =~ ^([yY][eE][sS]|[yY])+$ ]]
+then
+    echo -e "Installing development libraries\e[90m";
+    sudo yum -y install $DEVELOPMENT_LIBRARIES;
+    if ! isallowed rustup
+    then
+    	echo -e "\e[37mDownloading RustUp\e[90m";
+        curl --proto '=https' --tlsv1.2 -sSf $RUSTUP_DOWNLOAD_URL | sh;
+    fi
+    rustup update;
+    echo -e "\e[37m";
+fi
+
+read -r -p "Install LinuxBrew to home directory? [y/N] " installLinuxBrewHome
+if [[ "$installLinuxBrewHome" =~ ^([yY][eE][sS]|[yY])+$ ]]
+then
+    if ! isallowed brew
+    then
+    	echo -e "\e[37mDownloading LinuxBrew\e[90m";
+        sh -c "$(curl -fsSL $LINUXBREW_DOWNLOAD_URL)"
+        test -d ~/.linuxbrew && eval $(~/.linuxbrew/bin/brew shellenv)
+        test -d /home/linuxbrew/.linuxbrew && eval $(/home/linuxbrew/.linuxbrew/bin/brew shellenv)
+        test -r ~/.bash_profile && echo "eval \$($(brew --prefix)/bin/brew shellenv)" >>~/.bash_profile
+        echo "eval \$($(brew --prefix)/bin/brew shellenv)" >>~/.profile
+    fi
+    echo -e "\e[37m";
+fi
+
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/Linuxbrew/install/master/install.sh)"
+
+
 read -r -p "Install Python3 to home directory? [y/N] " installPy3Home
 if [[ "$installPy3Home" =~ ^([yY][eE][sS]|[yY])+$ ]]
 then
 	echo -e "Installing development libraries\e[90m";
 	sudo yum -y install $DEVELOPMENT_LIBRARIES;
 	mkdir /tmp/python3_build;
-	cd /tmp/python3_build;
+	cd /tmp/python3_build || (echo "Failed going to /tmp/python3_build"; exit);
 	echo -e "\e[37mDownloading Python3.7.2\e[90m";
 	wget https://www.python.org/ftp/python/3.7.2/Python-3.7.2.tar.xz;
 	tar -xf Python-3.7.2.tar.xz;
-	cd Python-3.7.2;
+	cd Python-3.7.2 || (echo "Failed going to Python-3.7.2"; exit);
 	echo -e "\e[37mBuilding Python3\e[90m";
 	./configure --prefix=$HOME --enable-optimizations;
 	sudo make;
@@ -97,7 +138,7 @@ then
 
 	# Link libs
 	ln -s /usr/lib64/libpython2.7.so.1.0 /usr/lib64/libpython2.7.so
-    PYTHON3_INSTALLED=`isallowed python3`;
+    PYTHON3_INSTALLED=$(isallowed python3);
 	echo -e "\e[37m";
 fi
 
@@ -132,7 +173,7 @@ then
 	then
 		pip3 install powerline-status;
 		git clone git@github.com:powerline/fonts.git;
-		cd fonts;
+		cd fonts || (echo "Failed going to fonts"; exit);
 		./install.sh;
 	else
 		echo -e "\e[31mERROR: Powerline requires Python3 installed";
