@@ -59,3 +59,15 @@ function chefsyntax() {
       fi
     done
 }
+
+function git-prune() {
+  if [[ -n "$1" ]]
+  then
+    if [ "$1" == "-y" ]
+    then
+      git remote prune origin
+      return
+    fi
+  fi
+  git remote prune origin --dry-run
+}
