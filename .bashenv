@@ -15,8 +15,10 @@ export PYTHONPATH="$PYTHONPATH:$HOME/.config/powerline"
 export CMAKE_ROOT=$HOME
 
 # vfx-rpms
-export PATH="/vfx/bin:$PATH"
+export PATH="/usr/local/bin:/vfx/bin:$PATH"
 export PYTHONPATH="/vfx/lib64/python2.7/site-packages:$PYTHONPATH"
-export LD_LIBRARY_PATH="/vfx/lib:/vfx/lib64:$LD_LIBRARY_PATH"
-export CPATH="/vfx/include:$CPATH"
+export LD_LIBRARY_PATH="/usr/local/lib:/usr/local/lib64:/vfx/lib:/vfx/lib64:$LD_LIBRARY_PATH"
+export CPATH="/usr/local/include:/vfx/include:$CPATH:/usr/include"
 
+# Local Python installs
+export PYTHONPATH="/usr/local/lib/python2.7/site-packages:/usr/local/lib64/python2.7/site-packages:$PYTHONPATH"
