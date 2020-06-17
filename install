@@ -1,12 +1,32 @@
 #!/bin/bash
-DEVELOPMENT_LIBRARIES="gcc gcc-c++ zlib zlib-devel libffi-devel openssl openssl-devel python-devel qt-devel qt qt-webkit-devel libxml2-devel libxslt-devel rpmdevtools python-pip curl git";
-DOCKER_LIBRARIES="yum-utils device-mapper-persistent-data lvm2";
 DOCKER_YUM_REPO="https://download.docker.com/linux/centos/docker-ce.repo"
 
 RIPGREP_DOWNLOAD_URL="https://github.com/BurntSushi/ripgrep/releases/download/0.10.0/ripgrep-0.10.0-x86_64-unknown-linux-musl.tar.gz";
 CHEFDK_DOWNLOAD_URL="https://packages.chef.io/files/stable/chefdk/3.8.14/el/7/chefdk-3.8.14-1.el7.x86_64.rpm"
 RUSTUP_DOWNLOAD_URL="https://sh.rustup.rs"
 LINUXBREW_DOWNLOAD_URL="https://raw.githubusercontent.com/Linuxbrew/install/master/install.sh"
+
+LINUX_DISTRO=$(cat /etc/*release | grep "^ID=" | sed -E "s/ID=//g")
+
+if [[ $LINUX_DISTRO = "debian" ]]
+then
+    DEVELOPMENT_TOOLS="build-essential"
+    ADD_REPO_TOOL="add-apt-repository"
+    GROUP_PACKAGE_TOOL="apt-get install"
+    PACKAGE_TOOL="apt-get"
+    DOCKER_LIBRARIES="device-mapper-persistent-data lvm2"
+    DEVELOPMENT_LIBRARIES="gcc gcc-c++ zlib zlib-dev libffi-dev openssl openssl-dev python-dev qt-dev qt qt-webkit-dev libxml2-dev libxslt-dev rpmdevtools python-pip curl git";
+
+elif [[ $LINUX_DISTRO = "centos" ]]
+then
+    DEVELOPMENT_TOOLS="Development Tools"
+    ADD_REPO_TOOL="yum-config-manager --add-repository"
+    GROUP_PACKAGE_TOOL="yum groupinstall"
+    PACKAGE_TOOL="yum"
+    DOCKER_LIBRARIES="yum-utils device-mapper-persistent-data lvm2"
+    DEVELOPMENT_LIBRARIES="gcc gcc-c++ zlib zlib-devel libffi-devel openssl openssl-devel python-devel qt-devel qt qt-webkit-devel libxml2-devel libxslt-devel rpmdevtools python-pip curl git";
+fi
+
 
 function isallowed { 
   if hash "$@" 2>/dev/null 
@@ -22,10 +42,10 @@ PYTHON3_INSTALLED=$(isallowed python3);
 PIP3_INSTALLED=$(isallowed pip3);
 CHEF_INSTALLED=$(isallowed chef);
 DOCKER_INSTALLED=$(isallowed docker);
-echo $PIP3_INSTALLED;
+echo "Linux Distro is $LINUX_DISTRO"
 
 echo -e "Installing Development Group \e[90m"
-sudo yum groupinstall 'Development Tools'
+sudo $GROUP_PACKAGE_TOOL -y $DEVELOPMENT_TOOLS
 echo -e "\e[37m"
 
 echo "===============================";
@@ -33,9 +53,9 @@ read -r -p "Install dev utils? [y/N] " installDev
 if [[ "$installDev" =~ ^([yY][eE][sS]|[yY])+$ ]]
 then
 	echo -e "Installing development libraries\e[90m";
-	sudo yum -y install $DEVELOPMENT_LIBRARIES;
+    sudo $PACKAGE_TOOL install -y $DEVELOPMENT_LIBRARIES;
 	echo -e "\e[37mInstalling development tools\e[90m";
-	sudo yum -y install cmake git htop;
+    sudo $PACKAGE_TOOL install -y cmake git htop;
 
     echo -e "\e[37mInstalling Ripgrep v0.10.0\e[90m";
     mkdir /tmp/ripgrep;
@@ -58,7 +78,7 @@ then
         cd /tmp || (echo "Failed going to /tmp"; exit);
         wget $CHEFDK_DOWNLOAD_URL;
         echo -e "\e[37mInstalling ChefDK\e[90m";
-        sudo yum -y install ${CHEFDK_DOWNLOAD_URL##*/};
+        sudo $PACKAGE_TOOL install -y ${CHEFDK_DOWNLOAD_URL##*/};
         rm -rf ${CHEFDK_DOWNLOAD_URL##*/};
         CHEF_INSTALLED=$(isallowed chef);
     fi
@@ -67,9 +87,9 @@ then
     read -r -p "Install Docker? [y/N] " installDocker
     if [[ "$installDocker" =~ ^([yY][eE][sS]|[yY])+$ ]]
     then
-        sudo yum -y install $DOCKER_LIBRARIES;
-        sudo yum-config-manager --add-repo $DOCKER_YUM_REPO;
-        sudo yum install -y docker-ce docker-ce-cli containerd.io;
+        sudo $PACKAGE_TOOL install -y $DOCKER_LIBRARIES;
+        sudo $GROUP_PACKAGE_TOOL $DOCKER_YUM_REPO;
+        sudo $PACKAGE_TOOL install -y docker-ce docker-ce-cli containerd.io;
         DOCKER_INSTALLED=$(isallowed docker);
     fi
 
@@ -91,7 +111,7 @@ read -r -p "Install Rust to home directory? [y/N] " installRustHome
 if [[ "$installRustHome" =~ ^([yY][eE][sS]|[yY])+$ ]]
 then
     echo -e "Installing development libraries\e[90m";
-    sudo yum -y install $DEVELOPMENT_LIBRARIES;
+    sudo $PACKAGE_TOOL -y install $DEVELOPMENT_LIBRARIES;
     if ! isallowed rustup
     then
     	echo -e "\e[37mDownloading RustUp\e[90m";
@@ -120,7 +140,7 @@ read -r -p "Install Python3 to home directory? [y/N] " installPy3Home
 if [[ "$installPy3Home" =~ ^([yY][eE][sS]|[yY])+$ ]]
 then
 	echo -e "Installing development libraries\e[90m";
-	sudo yum -y install $DEVELOPMENT_LIBRARIES;
+	sudo $PACKAGE_TOOL -y install $DEVELOPMENT_LIBRARIES;
 	mkdir /tmp/python3_build;
 	cd /tmp/python3_build || (echo "Failed going to /tmp/python3_build"; exit);
 	echo -e "\e[37mDownloading Python3.7.2\e[90m";
@@ -144,7 +164,7 @@ if [[ "$installPySide" =~ ^([yY][eE][sS]|[yY])+$ ]]
 then
 	# Pyside
 	echo -e "Installing PySide for Python2 (System)\e[90m";
-	sudo yum install -y python-pyside shiboken shiboken-python2-libs shiboken-python2-devel;
+	sudo $PACKAGE_TOOL install -y python-pyside shiboken shiboken-python2-libs shiboken-python2-devel;
 	# pip2 install wheel;
 	# cd /tmp;
 	# mkdir pyside_build;
