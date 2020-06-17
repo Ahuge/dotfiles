@@ -116,9 +116,6 @@ then
     echo -e "\e[37m";
 fi
 
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/Linuxbrew/install/master/install.sh)"
-
-
 read -r -p "Install Python3 to home directory? [y/N] " installPy3Home
 if [[ "$installPy3Home" =~ ^([yY][eE][sS]|[yY])+$ ]]
 then
