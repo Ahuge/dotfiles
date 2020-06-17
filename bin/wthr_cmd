@@ -1,0 +1,3 @@
+# !/bin/bash
+cat ~/.title.txt
+# curl -s 'wttr.in/Vancouver?format=3&m' &
