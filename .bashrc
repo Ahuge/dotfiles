@@ -10,6 +10,8 @@ source $HOME/.bashfunctions
 # Custom Environment Vars
 source $HOME/.bashenv
 
+export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2}'):0
+
 # Custom Aliases
 source $HOME/.bashaliases
 
@@ -25,10 +27,15 @@ disown
 
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 [[ -s ~/.autojump/etc/profile.d/autojump.sh ]] && source ~/.autojump/etc/profile.d/autojump.sh
+eval "$(zoxide init bash)"
 
 source ~/bin/tmuxinator.bash
 
 powerline-daemon -q
 export POWERLINE_BASH_CONTINUATION=1
 export POWERLINE_BASH_SELECT=1
-. ~/lib/python3.7/site-packages/powerline/bindings/bash/powerline.sh
+. ~/.local/lib/python3.7/site-packages/powerline/bindings/bash/powerline.sh
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
