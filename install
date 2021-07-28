@@ -8,6 +8,12 @@ LINUXBREW_DOWNLOAD_URL="https://raw.githubusercontent.com/Linuxbrew/install/mast
 
 LINUX_DISTRO=$(cat /etc/*release | grep "^ID=" | sed -E "s/ID=//g")
 
+function _install_yubikey_manager {
+    ${PACKAGE_TOOL} install ${YUBIKEY_LIBRARIES}
+    pip3 install yubikey-manager
+}
+
+
 if [[ $LINUX_DISTRO = "debian" ]]
 then
     DEVELOPMENT_TOOLS="build-essential"
@@ -15,7 +21,8 @@ then
     GROUP_PACKAGE_TOOL="apt-get install"
     PACKAGE_TOOL="apt-get"
     DOCKER_LIBRARIES="device-mapper-persistent-data lvm2"
-    DEVELOPMENT_LIBRARIES="gcc gcc-c++ zlib zlib-dev libffi-dev openssl openssl-dev python-dev qt-dev qt qt-webkit-dev libxml2-dev libxslt-dev rpmdevtools python-pip curl git";
+    DEVELOPMENT_LIBRARIES="gcc gcc-c++ zlib zlib-dev libffi-dev openssl openssl-dev python-dev qt-dev qt qt-webkit-dev libxml2-dev libxslt-dev rpmdevtools python-pip curl git libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libgdbm-dev libdb5.3-dev libbz2-dev libexpat1-dev liblzma-dev libffi-dev uuid-dev";
+    YUBIKEY_LIBRARIES="swig libpcsclite-dev pcscd"
 
 elif [[ $LINUX_DISTRO = "centos" ]]
 then
@@ -25,6 +32,7 @@ then
     PACKAGE_TOOL="yum"
     DOCKER_LIBRARIES="yum-utils device-mapper-persistent-data lvm2"
     DEVELOPMENT_LIBRARIES="gcc gcc-c++ zlib zlib-devel libffi-devel openssl openssl-devel python-devel qt-devel qt qt-webkit-devel libxml2-devel libxslt-devel rpmdevtools python-pip curl git";
+    YUBIKEY_LIBRARIES="swig libpcsclite-dev pcscd"
 fi
 
 
@@ -143,14 +151,13 @@ then
 	sudo $PACKAGE_TOOL -y install $DEVELOPMENT_LIBRARIES;
 	mkdir /tmp/python3_build;
 	cd /tmp/python3_build || (echo "Failed going to /tmp/python3_build"; exit);
-	echo -e "\e[37mDownloading Python3.7.2\e[90m";
-	wget https://www.python.org/ftp/python/3.7.2/Python-3.7.2.tar.xz;
-	tar -xf Python-3.7.2.tar.xz;
-	cd Python-3.7.2 || (echo "Failed going to Python-3.7.2"; exit);
+	echo -e "\e[37mDownloading Python3.7.11\e[90m";
+	wget https://www.python.org/ftp/python/3.7.11/Python-3.7.11.tar.xz;
+	tar -xf Python-3.7.11.tar.xz;
+	cd Python-3.7.11 || (echo "Failed going to Python-3.7.11"; exit);
 	echo -e "\e[37mBuilding Python3\e[90m";
 	./configure --prefix=$HOME --enable-optimizations;
-	sudo make;
-	sudo make test;
+	sudo make -j 8;
 	sudo make install;
 
 	# Link libs
@@ -199,46 +206,5 @@ then
 	echo -e "\e[37m";
 fi
 
-read -r -p "Install ShotgunToolkit? [y/N] " installSgTk
-if [[ "$installSgTk" =~ ^([yY][eE][sS]|[yY])+$ ]]
-then
-	# Install sgtk python
-	echo "Install Shotgun Python api";
-	sudo pip2 install git+https://github.com/shotgunsoftware/python-api@v3.0.39;
-	echo "Install Shotgun Tooklit";
-	sudo pip2 install git+https://github.com/shotgunsoftware/tk-core@v0.18.163;
-	sudo mkdir "/usr/lib/python2.7/hooks";
-	sudo touch /usr/lib/python2.7/hooks/bootstrap.py;
-	sudo cat > "/usr/lib/python2.7/hooks/bootstrap.py" << EOM
 
-#!/usr/env python
-import sgtk
-
-class Bootstrap(sgtk.get_hook_baseclass()):
-    def init(self, shotgun, pipeline_configuration_id, configuration_descriptor, **kwargs):
-        """
-        Initializes the hook.
-
-        This method is called right after the bootstrap manager reads this hook and passes in
-        information about the pipeline configuration that will be used.
-
-        The default implementation copies the arguments into the attributes named ``shotgun``,
-        ``pipeline_configuration_id`` and ``configuration_descriptor``.
-
-        :param shotgun: Connection to the Shotgun site.
-        :type shotgun: :class:`~shotgun_api3.Shotgun`
-
-        :param int pipeline_configuration_id: Id of the pipeline configuration we're bootstrapping into.
-            If None, the ToolkitManager is bootstrapping into the base configuration.
-
-        :param configuration_descriptor: Configuration the manager is bootstrapping into.
-        :type configuration_descriptor: :class:`~sgtk.descriptor.ConfigDescriptor`
-        """
-        self.shotgun = shotgun
-        self.pipeline_configuration_id = pipeline_configuration_id
-        self.configuration_descriptor = configuration_descriptor
-
-EOM
-fi
-
-
+_install_yubikey_manager;
