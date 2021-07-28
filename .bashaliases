@@ -1,5 +1,6 @@
 #!/bin/bash
 
+alias aws-vault="/usr/bin/aws-vault --backend file"
 alias weather="curl -s wttr.in/Vancouver?m"
 alias wthr="curl -s 'wttr.in/Vancouver?format=3&m'"
 alias gd="cd $HOME/_dev"
@@ -12,7 +13,8 @@ alias gs="git status"
 alias grm="git rebase origin/master"
 alias gri="git rebase --interactive --autosquash"
 alias gdif="git diff --pretty --color=always"
-alias delbranch="git branch --merged | egrep -v \"(^\\\*|master|dev|release)\" | xargs git branch -d"
+alias delbranch="git branch --merged | awk '!/^(\\*)? *master/ && !/^(\\*)? *dev/ && !/^(\\*)? *release/' | xargs git branch -d"
+# alias delbranch="git branch --merged | egrep -v \"(^\\\*|master|dev|release)\" | xargs git branch -d"
 alias gprune="git-prune $@"
 alias tmnew="tmuxinator new"
 alias tmstart="tmuxinator start"
