@@ -11,6 +11,12 @@ source $HOME/.bashfunctions
 source $HOME/.bashenv
 
 export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2}'):0
+export LIBGL_ALWAYS_INDIRECT=1
+dbus_status=$(service dbus status)
+if [[ $dbus_status = *"is not running"* ]]; then
+  echo "Starting dbus...Sudo is required"
+  sudo service dbus --full-restart
+fi
 
 # Custom Aliases
 source $HOME/.bashaliases
