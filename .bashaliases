@@ -1,6 +1,7 @@
 #!/bin/bash
 
-alias aws-vault="/usr/bin/aws-vault --backend file"
+alias ykman="/mnt/c/Program\ Files/Yubico/YubiKey\ Manager/ykman.exe"
+alias aws-vault="/usr/bin/aws-vault --prompt ykman"
 alias weather="curl -s wttr.in/Vancouver?m"
 alias wthr="curl -s 'wttr.in/Vancouver?format=3&m'"
 alias gd="cd $HOME/_dev"
