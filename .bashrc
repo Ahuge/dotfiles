@@ -30,12 +30,13 @@ echo -e "\033[1;3m`date '+%a'` \033[1m`date '+%b %d %I:%M'`\033[0m"
 wthr > $HOME/.title.txt  &
 disown
 
+fc-cache ~/.local/share/fonts
+
 
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 [[ -s ~/.autojump/etc/profile.d/autojump.sh ]] && source ~/.autojump/etc/profile.d/autojump.sh
 eval "$(zoxide init bash)"
 
-source ~/bin/tmuxinator.bash
 
 powerline-daemon -q
 export POWERLINE_BASH_CONTINUATION=1
@@ -66,3 +67,4 @@ if [ $? -ne 0 ]; then
   rm -rf $GPG_AGENT_SOCK
   setsid nohup socat UNIX-LISTEN:$GPG_AGENT_SOCK,fork EXEC:"$HOME/.ssh/wsl2-ssh-pageant.exe --gpg S.gpg-agent" &>/dev/null &
 fi
+source $HOME/.bash_completions

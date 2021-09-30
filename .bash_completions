@@ -1,0 +1,4 @@
+#!/bin/bash
+. "$HOME/.cargo/env"
+eval "$(zoxide init bash)"
+source ~/.local/share/git-completion.bash
