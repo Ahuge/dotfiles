@@ -1,0 +1,5 @@
+WTTR=$(curl -s -m 1 wttr.in?format=3 2>/dev/null)
+
+#printf 'foo\xe3\x80\x8c\xef\xbb\xbfbar\n'
+# printf "Weather: %s ​  || Here" "${WTTR%%[[:space:]]}"
+printf "%s" "${WTTR%%[[:space:]]}"
