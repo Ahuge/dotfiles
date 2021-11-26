@@ -3,8 +3,8 @@
 export KANBANFILE=~/.kanban.userstory.csv
 export EDITOR="vim"
 export BASHFILES="rc:functions:aliases:env"
-export PATH="$HOME/bin:$PATH"
-export LD_LIBRARY_PATH="$HOME/lib:$LD_LIBRARY_PATH"
+export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
+export LD_LIBRARY_PATH="$HOME/lib:$HOME/.local/lib:$LD_LIBRARY_PATH"
 export CPATH="$HOME/include:$CPATH"
 export LANG=en_US.UTF-8
 export TMUXINATOR_CONFIG="$HOME/.config/tmuxinator"
