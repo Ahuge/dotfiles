@@ -9,8 +9,8 @@ LINUXBREW_DOWNLOAD_URL="https://raw.githubusercontent.com/Linuxbrew/install/mast
 LINUX_DISTRO=$(cat /etc/*release | grep "^ID=" | sed -E "s/ID=//g")
 
 function _install_yubikey_manager {
-    ${PACKAGE_TOOL} install ${YUBIKEY_LIBRARIES}
-    pip3 install yubikey-manager
+    sudo ${PACKAGE_TOOL} install -y ${YUBIKEY_LIBRARIES}
+    sudo pip3 install yubikey-manager
 }
 
 
@@ -21,7 +21,7 @@ then
     GROUP_PACKAGE_TOOL="apt-get install"
     PACKAGE_TOOL="apt-get"
     DOCKER_LIBRARIES="device-mapper-persistent-data lvm2"
-    DEVELOPMENT_LIBRARIES="gcc gcc-c++ zlib zlib-dev libffi-dev openssl openssl-dev python-dev qt-dev qt qt-webkit-dev libxml2-dev libxslt-dev rpmdevtools python-pip curl git libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libgdbm-dev libdb5.3-dev libbz2-dev libexpat1-dev liblzma-dev libffi-dev uuid-dev";
+    DEVELOPMENT_LIBRARIES="curl wget unzip gcc zlib1g zlib1g-dev libffi-dev openssl libssl-dev python-dev qt-sdk-dev qt-sdk qt-sdk-webkit-dev libxml2-dev libxslt-dev python2-pip git libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libgdbm-dev libdb5.3-dev libbz2-dev libexpat1-dev liblzma-dev libffi-dev uuid-dev ca-certificates bzip2 libsqlite3-dev libbz2-dev libffi-dev libdb-dev libreadline-dev ";
     YUBIKEY_LIBRARIES="swig libpcsclite-dev pcscd"
 
 elif [[ $LINUX_DISTRO = "centos" ]]
@@ -56,6 +56,13 @@ echo -e "Installing Development Group \e[90m"
 sudo $GROUP_PACKAGE_TOOL -y $DEVELOPMENT_TOOLS
 echo -e "\e[37m"
 
+echo -e "Installing git commandline completion\e[90m"
+mkdir -p ~/.local/share
+wget https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash -O ~/.local/share/git-completion.bash
+echo 'source $HOME/.local/share/git-completion.bash' >> ~/.bash_completions
+echo -e "\e[37m"
+
+
 echo "===============================";
 read -r -p "Install dev utils? [y/N] " installDev
 if [[ "$installDev" =~ ^([yY][eE][sS]|[yY])+$ ]]
@@ -78,6 +85,48 @@ then
     cd /tmp || (echo "Failed going to /tmp"; exit);
     rm -rf /tmp/ripgrep;
      
+    echo -e "\e[37m";
+
+    echo -e "\e[37mInstalling zoxide\e[90m";
+    sudo $PACKAGE_TOOL install -y zoxide
+    eval "$(zoxide init bash)"
+    echo 'eval "$(zoxide init bash)"' >> ~/.bash_completions
+    # curl -sS https://webinstall.dev/zoxide | bash
+
+
+    echo -e "\e[37mInstalling fzf\e[90m";
+    sudo $PACKAGE_TOOL install -y fzf
+
+    echo -e "\e[37m";
+
+
+    echo -e "\e[37mInstalling aws-cli\e[90m";
+    cd /tmp
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    unzip -qq awscliv2.zip
+    sudo ./aws/install
+    rm -rf awscliv2.zip ./aws
+    cd $HOME
+
+    echo -e "\e[37mInstalling aws-vault\e[90m";
+    curl -s https://api.github.com/repos/99designs/aws-vault/releases/latest \
+            | grep "browser_download_url" \
+            | grep "aws-vault-linux-amd64" \
+            | cut -d : -f 2,3 | tr -d \" \
+            | wget -qi -
+    sudo cp ./aws-vault-linux-amd64 /usr/local/bin/aws-vault
+
+    echo -e "\e[37m";
+
+    echo -e "\e[37mInstalling lucagrulla cw\e[90m";
+    curl -s https://api.github.com/repos/lucagrulla/cw/releases/latest \
+            | grep "browser_download_url" \
+            | grep "cw_amd64.deb" \
+            | cut -d : -f 2,3 | tr -d \" \
+            | wget -qi -
+    sudo dpkg -i ./cw_amd64.deb
+    rm -rf cw_amd64.deb
+
     echo -e "\e[37m";
 
     read -r -p "Install Chef Dk? [y/N] " installChefDK
@@ -123,8 +172,10 @@ then
     if ! isallowed rustup
     then
     	echo -e "\e[37mDownloading RustUp\e[90m";
-        curl --proto '=https' --tlsv1.2 -sSf $RUSTUP_DOWNLOAD_URL | sh;
+        curl --proto '=https' --tlsv1.2 -sSf $RUSTUP_DOWNLOAD_URL | sh -s -- -y;
     fi
+    echo 'source $HOME/.cargo/env' >> ~/.bash_completions
+    source $HOME/.cargo/env
     rustup update;
     echo -e "\e[37m";
 fi
@@ -149,12 +200,16 @@ if [[ "$installPy3Home" =~ ^([yY][eE][sS]|[yY])+$ ]]
 then
 	echo -e "Installing development libraries\e[90m";
 	sudo $PACKAGE_TOOL -y install $DEVELOPMENT_LIBRARIES;
+    for pkg in build-essential zlib1g-dev libbz2-dev liblzma-dev libncurses5-dev libreadline6-dev libsqlite3-dev libssl-dev libgdbm-dev liblzma-dev tk8.5-dev lzma lzma-dev libgdbm-dev uuid-dev libgdbm-compat-dev libffi-dev
+    do
+        sudo apt-get -y install $pkg
+    done
 	mkdir /tmp/python3_build;
 	cd /tmp/python3_build || (echo "Failed going to /tmp/python3_build"; exit);
-	echo -e "\e[37mDownloading Python3.7.11\e[90m";
-	wget https://www.python.org/ftp/python/3.7.11/Python-3.7.11.tar.xz;
-	tar -xf Python-3.7.11.tar.xz;
-	cd Python-3.7.11 || (echo "Failed going to Python-3.7.11"; exit);
+	echo -e "\e[37mDownloading Python3.7.12\e[90m";
+	wget https://www.python.org/ftp/python/3.7.12/Python-3.7.12.tar.xz;
+	tar -xf Python-3.7.12.tar.xz;
+	cd Python-3.7.12 || (echo "Failed going to Python-3.7.12"; exit);
 	echo -e "\e[37mBuilding Python3\e[90m";
 	./configure --prefix=$HOME --enable-optimizations;
 	sudo make -j 8;
@@ -163,6 +218,9 @@ then
 	# Link libs
 	ln -s /usr/lib64/libpython2.7.so.1.0 /usr/lib64/libpython2.7.so
     PYTHON3_INSTALLED=$(isallowed python3);
+    python3 -m ensurepip --upgrade
+
+    sudo rm -rf /tmp/python3_build
 	echo -e "\e[37m";
 fi
 
@@ -195,10 +253,12 @@ then
 	# install powerline
 	if [[ "$installPy3Home" =~ ^([yY][eE][sS]|[yY])+$ ]] || [ $PYTHON3_INSTALLED ]
 	then
-		pip3 install powerline-status;
+        $HOME/bin/pip3 install powerline-status;
+        echo "Now git clone"
 		git clone git@github.com:powerline/fonts.git;
+        echo $PWD
 		cd fonts || (echo "Failed going to fonts"; exit);
-		./install.sh;
+		sudo ./install.sh;
 	else
 		echo -e "\e[31mERROR: Powerline requires Python3 installed";
 	fi
@@ -206,5 +266,6 @@ then
 	echo -e "\e[37m";
 fi
 
-
+echo -e "\e[37mInstalling yubikey_manager\e[90m";
 _install_yubikey_manager;
+echo -e "\e[37m";
