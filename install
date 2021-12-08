@@ -114,7 +114,7 @@ then
             | grep "aws-vault-linux-amd64" \
             | cut -d : -f 2,3 | tr -d \" \
             | wget -qi -
-    sudo cp ./aws-vault-linux-amd64 /usr/local/bin/aws-vault
+    sudo cp ./aws-vault-linux-amd64 /usr/bin/aws-vault
 
     echo -e "\e[37m";
 
