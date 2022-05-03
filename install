@@ -21,7 +21,7 @@ then
     GROUP_PACKAGE_TOOL="apt-get install"
     PACKAGE_TOOL="apt-get"
     DOCKER_LIBRARIES="device-mapper-persistent-data lvm2"
-    DEVELOPMENT_LIBRARIES="curl wget unzip gcc zlib1g zlib1g-dev libffi-dev openssl libssl-dev python-dev qt-sdk-dev qt-sdk qt-sdk-webkit-dev libxml2-dev libxslt-dev python2-pip git libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libgdbm-dev libdb5.3-dev libbz2-dev libexpat1-dev liblzma-dev libffi-dev uuid-dev ca-certificates bzip2 libsqlite3-dev libbz2-dev libffi-dev libdb-dev libreadline-dev ";
+    DEVELOPMENT_LIBRARIES="curl wget unzip gcc zlib1g zlib1g-dev libffi-dev openssl libssl-dev python-dev libxml2-dev libxslt-dev git libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libgdbm-dev libdb5.3-dev libbz2-dev libexpat1-dev liblzma-dev libffi-dev uuid-dev ca-certificates bzip2 libsqlite3-dev libbz2-dev libffi-dev libdb-dev libreadline-dev ";
     YUBIKEY_LIBRARIES="swig libpcsclite-dev pcscd"
 
 elif [[ $LINUX_DISTRO = "centos" ]]
@@ -92,10 +92,9 @@ then
     echo -e "\e[37m";
 
     echo -e "\e[37mInstalling zoxide\e[90m";
-    sudo $PACKAGE_TOOL install -y zoxide
+    curl -sS https://webinstall.dev/zoxide | bash
     eval "$(zoxide init bash)"
     echo 'eval "$(zoxide init bash)"' >> ~/.bash_completions
-    # curl -sS https://webinstall.dev/zoxide | bash
 
 
     echo -e "\e[37mInstalling fzf\e[90m";
@@ -178,7 +177,7 @@ if [[ "$installRustHome" =~ ^([yY][eE][sS]|[yY])+$ ]]
 then
     echo -e "Installing development libraries\e[90m";
     sudo $PACKAGE_TOOL -y install $DEVELOPMENT_LIBRARIES;
-    if ! isallowed rustup
+    if isallowed rustup
     then
     	echo -e "\e[37mDownloading RustUp\e[90m";
         curl --proto '=https' --tlsv1.2 -sSf $RUSTUP_DOWNLOAD_URL | sh -s -- -y;
@@ -230,6 +229,7 @@ then
     python3 -m ensurepip --upgrade
 
     sudo rm -rf /tmp/python3_build
+    cd $HOME
 	echo -e "\e[37m";
 fi
 
