@@ -63,6 +63,10 @@ echo 'source $HOME/.local/share/git-completion.bash' >> ~/.bash_completions
 echo -e "\e[37m"
 
 
+echo -e "Installing Curl and Unzip \e[90m"
+sudo $PACKAGE_TOOL install -y curl unzip
+echo -e "\e[37m"
+
 echo "===============================";
 read -r -p "Install dev utils? [y/N] " installDev
 if [[ "$installDev" =~ ^([yY][eE][sS]|[yY])+$ ]]
@@ -260,7 +264,7 @@ then
 	then
         $HOME/bin/pip3 install powerline-status;
         echo "Now git clone"
-		git clone git@github.com:powerline/fonts.git;
+        git clone https://github.com/powerline/fonts.git;
         echo $PWD
 		cd fonts || (echo "Failed going to fonts"; exit);
 		sudo ./install.sh;
