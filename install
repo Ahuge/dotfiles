@@ -99,6 +99,11 @@ then
 
     echo -e "\e[37m";
 
+    echo -e "\e[37mInstalling Github Hub\e[90m";
+    sudo $PACKAGE_TOOL install -y hub
+
+    echo -e "\e[37m";
+
 
     echo -e "\e[37mInstalling aws-cli\e[90m";
     cd /tmp
