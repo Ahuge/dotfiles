@@ -2,3 +2,6 @@
 . "$HOME/.cargo/env"
 eval "$(zoxide init bash)"
 source ~/.local/share/git-completion.bash
+source $HOME/.local/share/git-completion.bash
+eval "$(zoxide init bash)"
+source $HOME/.cargo/env
