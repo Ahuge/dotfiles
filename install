@@ -1,7 +1,7 @@
 #!/bin/bash
 DOCKER_YUM_REPO="https://download.docker.com/linux/centos/docker-ce.repo"
 
-RIPGREP_DOWNLOAD_URL="https://github.com/BurntSushi/ripgrep/releases/download/0.10.0/ripgrep-0.10.0-x86_64-unknown-linux-musl.tar.gz";
+RIPGREP_DOWNLOAD_URL="https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep-14.1.1-x86_64-unknown-linux-musl.tar.gz";
 CHEFDK_DOWNLOAD_URL="https://packages.chef.io/files/stable/chefdk/3.8.14/el/7/chefdk-3.8.14-1.el7.x86_64.rpm"
 RUSTUP_DOWNLOAD_URL="https://sh.rustup.rs"
 LINUXBREW_DOWNLOAD_URL="https://raw.githubusercontent.com/Linuxbrew/install/master/install.sh"
@@ -14,6 +14,27 @@ function _install_yubikey_manager {
 }
 
 
+function _download_latest_python {
+    outputLocation=$1
+    url='https://www.python.org/ftp/python/'
+
+    curl --silent "$url" |
+        sed -n 's!.*href="\([0-9]\+\.[0-9]\+\.[0-9]\+\)/".*!\1!p' |
+        sort -rV |
+    while read -r version; do
+        filename="Python-$version.tar.xz"
+        # Versions which only have alpha, beta, or rc releases will fail here.
+        # Stop when we find one with a final release.
+        if curl --fail --silent -o "$outputLocation/$filename" "$url/$version/$filename"; then
+            echo "{\"version\":\"$version\",\"output\":\"$outputLocation/$filename\"}"
+            break
+        fi
+    done
+}
+
+
+
+
 if [[ $LINUX_DISTRO = "debian" ]]
 then
     DEVELOPMENT_TOOLS="build-essential"
@@ -24,6 +45,16 @@ then
     DEVELOPMENT_LIBRARIES="curl wget unzip gcc zlib1g zlib1g-dev libffi-dev openssl libssl-dev python-dev libxml2-dev libxslt-dev git libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libgdbm-dev libdb5.3-dev libbz2-dev libexpat1-dev liblzma-dev libffi-dev uuid-dev ca-certificates bzip2 libsqlite3-dev libbz2-dev libffi-dev libdb-dev libreadline-dev ";
     YUBIKEY_LIBRARIES="swig libpcsclite-dev pcscd"
 
+elif [[ $LINUX_DISTRO = "ubuntu" ]]
+then
+    DEVELOPMENT_TOOLS="build-essential"
+    ADD_REPO_TOOL="add-apt-repository"
+    GROUP_PACKAGE_TOOL="apt-get install"
+    PACKAGE_TOOL="apt-get"
+    DOCKER_LIBRARIES="device-mapper-persistent-data lvm2"
+    DEVELOPMENT_LIBRARIES="curl wget unzip gcc zlib1g zlib1g-dev libffi-dev openssl libssl-dev python-dev libxml2-dev libxslt-dev git libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libgdbm-dev libdb5.3-dev libbz2-dev libexpat1-dev liblzma-dev libffi-dev uuid-dev ca-certificates bzip2 libsqlite3-dev libbz2-dev libffi-dev libdb-dev libreadline-dev jq ";
+    YUBIKEY_LIBRARIES="swig libpcsclite-dev pcscd"
+
 elif [[ $LINUX_DISTRO = "centos" ]]
 then
     DEVELOPMENT_TOOLS="Development Tools"
@@ -31,7 +62,7 @@ then
     GROUP_PACKAGE_TOOL="yum groupinstall"
     PACKAGE_TOOL="yum"
     DOCKER_LIBRARIES="yum-utils device-mapper-persistent-data lvm2"
-    DEVELOPMENT_LIBRARIES="gcc gcc-c++ zlib zlib-devel libffi-devel openssl openssl-devel python-devel qt-devel qt qt-webkit-devel libxml2-devel libxslt-devel rpmdevtools python-pip curl git";
+    DEVELOPMENT_LIBRARIES="gcc gcc-c++ zlib zlib-devel libffi-devel openssl openssl-devel python-devel qt-devel qt qt-webkit-devel libxml2-devel libxslt-devel rpmdevtools python-pip curl git jq";
     YUBIKEY_LIBRARIES="swig libpcsclite-dev pcscd"
 fi
 
@@ -206,31 +237,41 @@ fi
 read -r -p "Install Python3 to home directory? [y/N] " installPy3Home
 if [[ "$installPy3Home" =~ ^([yY][eE][sS]|[yY])+$ ]]
 then
-	echo -e "Installing development libraries\e[90m";
-	sudo $PACKAGE_TOOL -y install $DEVELOPMENT_LIBRARIES;
+    echo -e "Installing development libraries\e[90m";
+    sudo $PACKAGE_TOOL -y install $DEVELOPMENT_LIBRARIES;
     for pkg in build-essential zlib1g-dev libbz2-dev liblzma-dev libncurses5-dev libreadline6-dev libsqlite3-dev libssl-dev libgdbm-dev liblzma-dev tk8.5-dev lzma lzma-dev libgdbm-dev uuid-dev libgdbm-compat-dev libffi-dev
     do
         sudo apt-get -y install $pkg
     done
-	mkdir /tmp/python3_build;
-	cd /tmp/python3_build || (echo "Failed going to /tmp/python3_build"; exit);
-	echo -e "\e[37mDownloading Python3.7.12\e[90m";
-	wget https://www.python.org/ftp/python/3.7.12/Python-3.7.12.tar.xz;
-	tar -xf Python-3.7.12.tar.xz;
-	cd Python-3.7.12 || (echo "Failed going to Python-3.7.12"; exit);
-	echo -e "\e[37mBuilding Python3\e[90m";
-	./configure --prefix=$HOME --enable-optimizations;
-	sudo make -j 8;
-	sudo make install;
+    mkdir -p /tmp/python3_build;
+    cd /tmp/python3_build || (echo "Failed going to /tmp/python3_build"; exit);
+    echo -e "\e[37mDownloading Latest Python3\e[90m";
+    output=$(_download_latest_python "/tmp/python3_build")
 
-	# Link libs
-	ln -s /usr/lib64/libpython2.7.so.1.0 /usr/lib64/libpython2.7.so
-    PYTHON3_INSTALLED=$(isallowed python3);
-    python3 -m ensurepip --upgrade
+    pythonVersion=$(echo "$output" | jq -r '.version')
+    tar_file=$(echo "$output" | jq -r '.output')
+    echo "Attempting to extract: $tar_file"
+    # Check if tar_file is not empty before trying to untar
+    if [ -n "$tar_file" ]; then
+        tar -xf "$tar_file" -C /tmp/python3_build # untar into the build directory
+        cd Python-$pythonVersion || (echo "Failed going to Python-$pythonVersion"; exit);
+        echo -e "\e[37mBuilding Python3\e[90m";
+        ./configure --prefix=$HOME --enable-optimizations;
+        sudo make -j 8;
+        sudo make install;
+    
+        # Link libs
+        ln -s /usr/lib64/libpython2.7.so.1.0 /usr/lib64/libpython2.7.so
+        PYTHON3_INSTALLED=$(isallowed python3);
+        python3 -m ensurepip --upgrade
+    else
+        echo "Error: Could not determine tar file from output."
+    fi
+    
 
     sudo rm -rf /tmp/python3_build
     cd $HOME
-	echo -e "\e[37m";
+    echo -e "\e[37m";
 fi
 
 read -r -p "Install PySide? [y/N] " installPySide
