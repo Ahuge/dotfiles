@@ -88,6 +88,8 @@ Plug 'luochen1990/rainbow'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 Plug 'nvie/vim-flake8'
 
+Plug 'prabirshrestha/vim-lsp'
+
 call plug#end()
 
 let g:flake8_quickfix_location="topleft"
@@ -112,6 +114,15 @@ function SpecialPaste()
     set nopaste
     return ""
 endfunction
+
+if executable('ruff')
+    au User lsp_setup call lsp#register_server({
+        \ 'name': 'ruff',
+        \ 'cmd': {server_info->['ruff', 'server']},
+        \ 'allowlist': ['python'],
+        \ 'workspace_config': {},
+        \ })
+endif
 
 
 :nmap <leader>xx "=SpecialPaste()
